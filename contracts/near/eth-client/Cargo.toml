@@ -20,6 +20,7 @@ arrutil = "0.1.2"
 ethash = { git = "https://github.com/nearprotocol/rust-ethash" }
 hex = "0.4.0"
 rustc-hex = "2.1.0"
+chrono = "0.4.19"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 # serde's Serialize and Deserialize traits are required for `near_bindgen` macro for non-wasm32 targets

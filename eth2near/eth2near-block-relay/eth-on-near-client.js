@@ -31,14 +31,16 @@ const borshSchema = {
   initInput: {
     kind: 'struct',
     fields: [
-      ['validate_ethash', 'bool'],
+      ['validate_header', 'bool'],
+      ['validate_header_mode', 'string'],
       ['dags_start_epoch', 'u64'],
       ['dags_merkle_roots', ['H128']],
       ['first_header', ['u8']],
       ['hashes_gc_threshold', 'u64'],
       ['finalized_gc_threshold', 'u64'],
       ['num_confirmations', 'u64'],
-      ['trusted_signer', '?AccountId']
+      ['trusted_signer', '?AccountId'],
+      ['chain_id', 'u64']
     ]
   },
   dagMerkleRootInput: {
@@ -136,8 +138,8 @@ class EthOnNearClientContract extends BorshContract {
   }
 
   // Call initialization methods on the contract.
-  // If validateEthash is true will do ethash validation otherwise it won't.
-  async maybeInitialize (hashesGcThreshold, finalizedGcThreshold, numConfirmations, validateEthash, trustedSigner, robustWeb3) {
+  // If validateHeader is true will do header validation otherwise it won't.
+  async maybeInitialize (hashesGcThreshold, finalizedGcThreshold, numConfirmations, validateHeader, validateHeaderMode, trustedSigner, chainID, robustWeb3) {
     await this.accessKeyInit()
     let initialized = false
     try {
@@ -151,14 +153,16 @@ class EthOnNearClientContract extends BorshContract {
       )
       await this.init(
         {
-          validate_ethash: validateEthash,
+          validate_header: validateHeader,
+          validate_header_mode: validateHeaderMode,
           dags_start_epoch: 0,
           dags_merkle_roots: roots.dag_merkle_roots,
           first_header: blockRlp,
           hashes_gc_threshold: hashesGcThreshold,
           finalized_gc_threshold: finalizedGcThreshold,
           num_confirmations: numConfirmations,
-          trusted_signer: trustedSigner
+          trusted_signer: trustedSigner,         
+          chain_id: chainID
         },
         new BN('300000000000000')
       )

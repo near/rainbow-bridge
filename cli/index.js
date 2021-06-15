@@ -94,9 +94,15 @@ RainbowConfig.declareOption(
   '100000000000000000000000000'
 )
 RainbowConfig.declareOption(
-  'near-client-validate-ethash',
-  'Whether validate ethash of submitted eth block, should set to true on mainnet and false on PoA testnets',
+  'near-client-validate-header',
+  'Whether validate header of submitted eth block, should set to true on mainnet(s) and false on PoA testnets',
   'true'
+)
+
+RainbowConfig.declareOption(
+  'near-client-validate-header-mode',
+  'Choose between ethash and bsc',
+  'ethash'
 )
 RainbowConfig.declareOption(
   'hashes-gc-threshold',
@@ -456,7 +462,8 @@ RainbowConfig.addOptions(
     'near-client-sk',
     'near-client-contract-path',
     'near-client-init-balance',
-    'near-client-validate-ethash',
+    'near-client-validate-header',
+    'near-client-validate-header-mode',
     'near-client-trusted-signer',
     'hashes-gc-threshold',
     'finalized-gc-threshold',

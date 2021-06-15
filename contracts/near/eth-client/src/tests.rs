@@ -249,6 +249,7 @@ fn add_dags_merkle_roots() {
     let dmr = read_roots_collection();
     let contract = EthClient::init(
         true,
+        String::from("ethash"),
         0,
         read_roots_collection().dag_merkle_roots,
         blocks[0].clone(),
@@ -256,6 +257,7 @@ fn add_dags_merkle_roots() {
         10,
         10,
         None,
+        97,
     );
 
     assert_eq!(dmr.dag_merkle_roots[0], contract.dag_merkle_root(0));
@@ -281,6 +283,7 @@ fn add_blocks_2_and_3() {
 
     let mut contract = EthClient::init(
         true,
+        String::from("ethash"),
         0,
         read_roots_collection().dag_merkle_roots,
         blocks[0].clone(),
@@ -288,6 +291,7 @@ fn add_blocks_2_and_3() {
         10,
         10,
         None,
+        97,
     );
 
     for (block, proof) in blocks
@@ -326,6 +330,7 @@ fn add_blocks_before_and_after_istanbul_fork() {
 
     let mut contract = EthClient::init(
         true,
+        String::from("ethash"),
         0,
         read_roots_collection().dag_merkle_roots,
         blocks[0].clone(),
@@ -333,6 +338,7 @@ fn add_blocks_before_and_after_istanbul_fork() {
         10,
         10,
         None,
+        97,
     );
 
     for (block, proof) in blocks
@@ -377,6 +383,7 @@ fn add_blocks_before_and_after_nov11_2020_unannounced_fork() {
 
     let mut contract = EthClient::init(
         true,
+        String::from("ethash"),
         0,
         read_roots_collection().dag_merkle_roots,
         blocks[0].clone(),
@@ -384,6 +391,7 @@ fn add_blocks_before_and_after_nov11_2020_unannounced_fork() {
         10,
         10,
         None,
+        97,
     );
 
     for (block, proof) in blocks
@@ -414,6 +422,7 @@ fn add_block_diverged_until_ethashproof_dataset_fix() {
 
     let mut contract = EthClient::init(
         true,
+        String::from("ethash"),
         0,
         read_roots_collection().dag_merkle_roots,
         blocks[0].clone(),
@@ -421,6 +430,7 @@ fn add_block_diverged_until_ethashproof_dataset_fix() {
         500,
         20,
         None,
+        97,
     );
 
     contract.add_block_header(blocks[1].clone(), block_with_proof.to_double_node_with_merkle_proof_vec());
@@ -444,6 +454,7 @@ fn add_400000_block_only() {
     let block_with_proof = read_block(format!("./src/data/{}.json", block_height));
     let mut contract = EthClient::init(
         true,
+        String::from("ethash"),
         400_000 / 30000,
         vec![block_with_proof.merkle_root],
         blocks[0].clone(),
@@ -451,6 +462,7 @@ fn add_400000_block_only() {
         10,
         10,
         None,
+        97
     );
     contract.add_block_header(blocks[1].clone(), block_with_proof.to_double_node_with_merkle_proof_vec());
     assert_eq!(hashes[1], contract.block_hash(block_height as u64).unwrap());
@@ -475,6 +487,7 @@ fn add_two_blocks_from_8996776() {
 
     let mut contract = EthClient::init(
         true,
+        String::from("ethash"),
         0,
         read_roots_collection().dag_merkle_roots,
         blocks[0].clone(),
@@ -482,6 +495,7 @@ fn add_two_blocks_from_8996776() {
         10,
         10,
         None,
+        97,
     );
 
     for (block, proof) in blocks
@@ -525,6 +539,7 @@ fn add_two_blocks_from_400000() {
 
     let mut contract = EthClient::init(
         true,
+        String::from("ethash"),
         400_000 / 30000,
         vec![blocks_with_proofs.first().unwrap().merkle_root],
         blocks[0].clone(),
@@ -532,6 +547,7 @@ fn add_two_blocks_from_400000() {
         10,
         10,
         None,
+        97,
     );
 
     for (block, proof) in blocks
