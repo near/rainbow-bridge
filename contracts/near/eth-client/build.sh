@@ -12,6 +12,7 @@ else
      userflag=""
 fi
 
+# simple:latest \
 docker run \
      --mount type=bind,source=$DIR/..,target=/host \
      --cap-add=SYS_PTRACE --security-opt seccomp=unconfined $userflag \

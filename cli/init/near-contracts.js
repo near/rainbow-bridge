@@ -99,18 +99,21 @@ class InitNearContracts {
     )
     const robustWeb3 = new RobustWeb3(ethNodeUrl)
 
-    // TODO: Binance chain Check if we can get this chain_id from other source
-    // The chain_id is used by the bsc POSA https://chainid.network/chains/
-    // 57: mainnet
-    // 97: testnet
-    const chainID = 97
+    // get chain id used only by the bsc verify header.
+    var chainID = await robustWeb3.web3.eth.net.getId()
+
+    // check if the nearClientValidateHeaderMode is either 'ethash' or 'bsc' if not set
+    // 'ethash' as default
+    if (nearClientValidateHeaderMode != "ethash" && nearClientValidateHeaderMode != "bsc"){
+      nearClientValidateHeaderMode = "ethash"
+    }
 
     await clientContract.maybeInitialize(
       hashesGcThreshold,
       finalizedGcThreshold,
       numConfirmations,
       nearClientValidateHeader === 'true',
-      nearClientValidateHeaderMode || 'ethash',
+      nearClientValidateHeaderMode,
       nearClientTrustedSigner || null,
       chainID,
       robustWeb3

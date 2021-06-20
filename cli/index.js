@@ -14,6 +14,7 @@ const {
 } = require('./commands/start/near2eth-relay.js')
 const { StartWatchdogCommand } = require('./commands/start/watchdog.js')
 const { StartGanacheNodeCommand } = require('./commands/start/ganache.js')
+const { StartBinanceSmartChainNodeCommand } = require('./commands/start/binance-smart-chain.js')
 const { StartLocalNearNodeCommand } = require('./commands/start/near.js')
 const { AddressWatcherCommand } = require('./commands/start/address-watcher.js')
 const { StopManagedProcessCommand } = require('./commands/stop/process.js')
@@ -342,6 +343,12 @@ RainbowConfig.addOptions(
 )
 
 RainbowConfig.addOptions(
+  startCommand.command('binance-smart-chain'),
+  StartBinanceSmartChainNodeCommand.execute,
+  []
+)
+
+RainbowConfig.addOptions(
   startCommand.command('eth2near-relay'),
   StartEth2NearRelayCommand.execute,
   [
@@ -354,7 +361,8 @@ RainbowConfig.addOptions(
     'total-submit-block',
     'gas-per-transaction',
     'daemon',
-    'metrics-port'
+    'metrics-port',
+    'near-client-validate-header-mode'
   ]
 )
 

@@ -147,7 +147,13 @@ class EthOnNearClientContract extends BorshContract {
     } catch (e) {}
     if (!initialized) {
       console.log('EthOnNearClient is not initialized, initializing...')
-      const lastBlockNumber = await robustWeb3.getBlockNumber()
+      let lastBlockNumber = await robustWeb3.getBlockNumber()
+      
+      // if validateHeaderMode is bsc(POSA) we have to get the last epoch header
+      if (validateHeaderMode == "bsc" && lastBlockNumber%200 != 0){
+        lastBlockNumber = lastBlockNumber - lastBlockNumber%200
+      }
+      
       const blockRlp = web3BlockToRlp(
         await robustWeb3.getBlock(lastBlockNumber)
       )

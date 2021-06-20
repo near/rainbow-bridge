@@ -1,13 +1,11 @@
 use admin_controlled::Mask;
 use borsh::{BorshDeserialize, BorshSerialize};
 use eth_types::*;
-use eth_types::{SealData};
 use near_sdk::collections::UnorderedMap;
 use near_sdk::AccountId;
 use near_sdk::{env, near_bindgen, PanicOnDefault};
-// use forest_crypto;
-// use arrayref;
-use chrono;
+use libsecp256k1::{RecoveryId, Signature, Message, recover};
+use tiny_keccak::{Hasher, Keccak};
 
 #[cfg(not(target_arch = "wasm32"))]
 use serde::{Deserialize, Serialize};
@@ -69,10 +67,12 @@ const PAUSE_ADD_BLOCK_HEADER: Mask = 1;
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
-pub struct EthClient {
-    /// Whether client validates the PoW when accepting the header. Should only be set to `false`
+pub struct EthClient {   
+    /// Whether client validates the PoW or POSA when accepting the header. Should only be set to `false`
     /// for debugging, testing, diagnostic purposes when used with Ganache or in PoA testnets
-    // validate_ethash: bool,
+    validate_header: bool,
+    /// Validate header mode to switch between ethash (POW) and bsc (POSA)
+    validate_header_mode: String,
     /// The epoch from which the DAG merkle roots start.
     dags_start_epoch: u64,
     /// DAG merkle roots for the next several years.
@@ -109,11 +109,6 @@ pub struct EthClient {
     trusted_signer: Option<AccountId>,
     /// Mask determining all paused functions
     paused: Mask,
-    /// Validate header allows to validate the block header or skip
-    /// if true the validate_header_mode is ignored
-    validate_header: bool,
-    /// Validate header mode to switch between ethash (POW) and bsc (POSA)
-    validate_header_mode: String,
     /// Store the bsc epoch header key 
     epoch_header: H256,
     /// chain id
@@ -141,8 +136,7 @@ impl EthClient {
         let header_number = header.number;
         let mut epoch_header: H256 = H256([0; 32].into());
 
-        // check if the current mode is bsc POSA, then is the header is epoch
-        // if not panic
+        // check if the current mode is bsc POSA, then store the epoch header.
         if validate_header_mode == String::from("bsc"){
             if !header.number%200==0{
                 panic!("The initial header for POSA have to be an epoch header");
@@ -151,7 +145,6 @@ impl EthClient {
         }
         
         let mut res = Self {
-            // validate_ethash,
             validate_header_mode,
             epoch_header: epoch_header,
             dags_start_epoch,
@@ -238,6 +231,12 @@ impl EthClient {
     ) {
         self.check_not_paused(PAUSE_ADD_BLOCK_HEADER);
         let header: BlockHeader = rlp::decode(block_header.as_slice()).unwrap();
+
+        // check if the current header is epoch is yes update the current epoch_header.
+        if self.is_epoch(header.number){
+            env::log(format!("NEW EPOCH HEADER ID: {:?}", header.number).as_bytes());
+            self.epoch_header = header.hash.unwrap();
+        }
 
         if let Some(trusted_signer) = &self.trusted_signer {
             assert!(
@@ -390,20 +389,23 @@ impl EthClient {
         prev: &BlockHeader,
         dag_nodes: &[DoubleNodeWithMerkleProof],
     ) -> bool {
-
+        // if the validate_header is false, header are not validated. 
         if self.validate_header == false {
             return true;
         }
 
         if self.validate_header_mode == String::from("ethash") {
+            // validate ethash POW headers
             return self.verify_header_pow(&header, &prev, &dag_nodes);
         }else if self.validate_header_mode == String::from("bsc") {
+            // validate bsc POSA headers 
             return self.verify_header_bsc(&header, &prev);
         }
         false
     }
 
-    fn seal_hash(&self, header: &BlockHeader, chain_id: u64)-> [u8; 32]{
+    // seal and hash bsc header.
+    fn seal_hash(&self, header: &BlockHeader, chain_id: U256)-> [u8; 32]{
         let d = SealData{chain_id, header};
         d.seal_hash()
     }
@@ -411,11 +413,6 @@ impl EthClient {
     //  Verify POSA of the binance chain header.
     fn verify_header_bsc(&self, header: &BlockHeader, prev: &BlockHeader) -> bool {
        
-        // Don't waste time checking blocks from the future
-        if header.timestamp > chrono::Utc::now().timestamp() as u64{
-            return false;
-        }
-
         let (extra_vanity, extra_seal) = (32, 65);
         let validator_bytes_length = 20;
 
@@ -474,53 +471,65 @@ impl EthClient {
             return false;
         }
         
+        let prev_gas_limit = format!("{}", prev.gas_limit).parse::<i64>().unwrap();
+        let header_gas_limit = format!("{}", header.gas_limit).parse::<i64>().unwrap();
+
         // Verify that the gas limit remains within allowed bounds
-        let mut diff = prev.gas_limit - header.gas_limit;
-        if diff < U256(0.into()) {
-            diff *= -1
-        }
-        
-        let limit = prev.gas_limit / gas_limit_bound_divisor;
-        
+        let diff = (prev_gas_limit-header_gas_limit).abs();
+        let limit = prev_gas_limit / gas_limit_bound_divisor;
+
         if diff >= limit || header.gas_limit < U256(min_gas_limit.into()) {
             return false;
         }
-
-        return self.verify_seal(header, prev);
+        
+        self.verify_seal(header)
     }
-
+    
+    // check if the block is an epoch header.
     fn is_epoch(&self, number: u64)->bool{
         number%200==0
     }
+    
+    // check if the author is the signer.
+    fn is_author(&self, header: &BlockHeader) -> bool{
+        
+        let extra_seal = 65;
+        let seal_hash = self.seal_hash(header, U256(self.chain_id.into()));
 
-    fn verify_seal(&self, header: &BlockHeader, prev: &BlockHeader) -> bool {
+        // get the signature from header extra_data
+        let signature = header.extra_data[header.extra_data.len()-extra_seal..].to_vec();
+        let mut sig = [0u8; 65];
+        sig.copy_from_slice(&signature[..]);
+
+        let v = sig[64];
+        let mut r = [0u8; 32];
+        let mut s = [0u8; 32];
+        r.copy_from_slice(&signature[0..32]);
+        s.copy_from_slice(&signature[32..64]);
         
-        // Verifying the genesis block is not supported.
-        if header.number == 0 {
-            return false;
-        }
-        
+        let rec_id = RecoveryId::parse(v).unwrap();
+        let mut data = [0u8; 64];
+        data[0..32].copy_from_slice(&r[..]);
+        data[32..64].copy_from_slice(&s[..]);
+
+        let sig = Signature::parse_standard(&data).unwrap();
+        let msg = Message::parse_slice(&seal_hash).unwrap();
+        let public_key = recover(&msg, &sig, &rec_id).unwrap();
+
+        let mut keccak = Keccak::v256();
+        let mut result = [0u8; 32];
+        keccak.update(&public_key.serialize()[1..]);
+        keccak.finalize(&mut result);
+
+        let mut address = [0u8; 20];
+        address.copy_from_slice(&result[12..]);
+
+        H160(address.into()) == header.author
+    }
+
+    // check if the auther address is valid and is in the validator set.
+    fn is_validator(&self, header: &BlockHeader) -> bool{
         let (extra_vanity, extra_seal, address_size) = (32, 65, 20);
-
-        // verify the signature.
-        // 1. extract the signature from the extra_data, then convert it from vec<u8> to [u8; 65]
-        // 2. return seal hash of the block.
-        // 3. recover public key using secp256k1 ecrecover
-        // 4. get the address of the signer and compare it with the validator block
-        // let signature = header.extra_data[header.extra_data.len()-extra_seal..].to_vec();
-        // let sig= arrayref::array_ref![signature, 0, 65];
-        // let seal_hash = self.seal_hash(header, self.chain_id);
-        // let pub_key = forest_crypto::ecrecover(&seal_hash, sig).unwrap();
-
-        // // Todo: check if the pub_key has 0x.. if Yes trim it.
-        // // Parlia bsc copy(signer[:], crypto.Keccak256(pubkey[1:])[12:])
-        // let signer_address = near_keccak256(&pub_key.payload_bytes());
-        // let mut signer: [u8; 20] = [0;20];
-        // signer[0..20].clone_from_slice(&signer_address[12..32]);
-        
-        // if H160(signer.into()) != header.author {
-        //     return false;
-        // }
 
         // get the epoch header.
         let epoch_header = self.headers.get(&self.epoch_header).unwrap();
@@ -528,18 +537,30 @@ impl EthClient {
         // verify if the author is inside the validator set.
         let validators =
             epoch_header.extra_data[extra_vanity..(epoch_header.extra_data.len() - extra_seal)].to_vec();
-        let mut found = false;
 
         // loop throught the validators and check if the author exists.
         for x in 0..(validators.len() / address_size) {
             let add: Address =
                 Address::from(&validators[(x * address_size)..((x + 1) * address_size)]);
             if header.author == add {
-                found = true;
+                return true;
             }
         }
+        false
+    }
 
-        return found;
+    fn verify_seal(&self, header: &BlockHeader) -> bool {
+        
+        // Verifying the genesis block is not supported.
+        if header.number == 0 {
+            return false;
+        }
+        
+        if !self.is_author(&header){
+            return false
+        }
+
+        self.is_validator(&header)
     }
 
     /// Verify PoW of the header.

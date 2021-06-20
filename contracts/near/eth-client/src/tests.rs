@@ -602,6 +602,7 @@ fn predumped_block_can_be_added() {
 
     let mut contract = EthClient::init(
         true,
+        String::from("ethash"),
         start_block_height / 30000,
         vec![first_block_with_proof.merkle_root],
         first_block_with_proof.header_rlp.0.clone(),
@@ -609,6 +610,7 @@ fn predumped_block_can_be_added() {
         10,
         10,
         None,
+        97,
     );
 
     let bar = ProgressBar::new(blocks_with_proofs.len() as _);
