@@ -254,7 +254,7 @@ class Near2EthRelay {
 
             await clientContract.methods.addLightClientBlock(borshBlock).send({
               from: ethMasterAccount,
-              gas: 7000000,
+              gas: 10000000,
               handleRevert: true,
               gasPrice: gasPrice.mul(new BN(ethGasMultiplier))
             })
@@ -265,6 +265,7 @@ class Near2EthRelay {
             }
 
             console.log('Submitted.')
+            await sleep(240000) // To prevent submitting the same block again
             continue
           }
         }

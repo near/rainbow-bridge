@@ -79,7 +79,7 @@ class Watchdog {
                 .checkBlockProducerSignatureInHead(i)
                 .call()
             } catch (e) {
-              if (e.message.endsWith('This signature was skipped')) {
+              if (e.message.endsWith('No such signature')) {
                 console.log('Signature skipped')
                 continue
               } else {
