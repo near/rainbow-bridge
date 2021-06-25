@@ -1,7 +1,12 @@
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 
-RUN apt-get update && apt-get install -y \
-    COPY . /usr/src/
+ENV RUSTUP_HOME=/usr/local/rustup \
+    CARGO_HOME=/usr/local/cargo \
+    PATH=/usr/local/cargo/bin:$PATH \
+    LC_ALL=C.UTF-8 \
+    LANG=C.UTF-8 \
+    PATH=~/.local/bin:$PATH \
+    DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update -qq && apt-get install -y \
     build-essential \
@@ -15,20 +20,22 @@ RUN apt-get update -qq && apt-get install -y \
     netcat \
     pkg-config \
     python3 \
-    && rm -rf /var/lib/apt/lists/*
+    python3-pip \
+    && rm -rf /var/lib/apt/lists/*  \
+    && curl -sL https://deb.nodesource.com/setup_12.x | bash -
 
-RUN curl -sL https://deb.nodesource.com/setup_12.x | bash -
-RUN apt-get install nodejs && npm -g install ganache-cli
-
-ENV RUSTUP_HOME=/usr/local/rustup \
-    CARGO_HOME=/usr/local/cargo \
-    PATH=/usr/local/cargo/bin:$PATH
+RUN apt-get install nodejs && npm -g install ganache-cli yarn
 
 RUN curl https://sh.rustup.rs -sSf | \
     sh -s -- -y --no-modify-path --default-toolchain nightly-2020-05-15
 
-COPY . /usr/src/
-COPY config* ~/.rainbow
+RUN curl -L https://golang.org/dl/go1.16.linux-amd64.tar.gz --output go1.16.linux-amd64.tar.gz && \
+    tar -C /usr/local -xzf go1.16.linux-amd64.tar.gz
 
 WORKDIR /usr/src
-RUN node index.js prepare
+COPY . .
+RUN yarn
+ENV PATH /usr/local/go/bin:$PATH
+RUN go version
+RUN sh -c "./utils/scripts/docker_prepare.sh"
+CMD ["sh", "-c", "./utils/scripts/docker_start.sh"]

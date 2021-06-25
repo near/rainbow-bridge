@@ -17,6 +17,7 @@
   ],
   "dependencies": {},
   "devDependencies": {
+    "http-server": "^0.12.3",
     "prettier": "^2.2.1",
     "prettier-plugin-solidity": "^1.0.0-beta.5",
     "standard": "*"

@@ -1,11 +1,14 @@
-node_modules
 artifacts
 cache
 coverage
 coverage.json
-testdata
+node_modules
 target
+testdata
+vendor
 
+# Ignore ethashproof binaries
+eth2near/ethashproof/cmd/cache/cache
 eth2near/ethashproof/cmd/epoch/epoch
 eth2near/ethashproof/cmd/relayer/relayer
-eth2near/ethashproof/cmd/cache/cache
+
