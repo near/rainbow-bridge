@@ -2,7 +2,7 @@ use admin_controlled::Mask;
 use borsh::{BorshDeserialize, BorshSerialize};
 use eth_types::*;
 use near_sdk::collections::UnorderedMap;
-use near_sdk::AccountId;
+use near_sdk::{assert_self, AccountId};
 use near_sdk::{env, near_bindgen, PanicOnDefault};
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -210,8 +210,9 @@ impl EthClient {
         let header: BlockHeader = rlp::decode(block_header.as_slice()).unwrap();
 
         if let Some(trusted_signer) = &self.trusted_signer {
-            assert!(
-                &env::signer_account_id() == trusted_signer,
+            assert_eq!(
+                &env::signer_account_id(),
+                trusted_signer,
                 "Eth-client is deployed as trust mode, only trusted_signer can add a new header"
             );
         } else {
@@ -227,6 +228,15 @@ impl EthClient {
         }
 
         self.record_header(header);
+    }
+
+    pub fn update_trusted_signer(&mut self, trusted_signer: Option<AccountId>) {
+        assert_self();
+        self.trusted_signer = trusted_signer;
+    }
+
+    pub fn get_trusted_signer(&self) -> Option<AccountId> {
+        self.trusted_signer.clone()
     }
 }
 
