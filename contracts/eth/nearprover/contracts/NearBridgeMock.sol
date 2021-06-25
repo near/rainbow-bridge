@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8;
 
-import "./bridge/INearBridge.sol";
+import "nearbridge/contracts/INearBridge.sol";
 
 contract NearBridgeMock is INearBridge {
     mapping(uint64 => bytes32) public override blockHashes;
