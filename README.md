@@ -7,12 +7,14 @@
   </p>
 
   <p>
-    <a href="https://buildkite.com/nearprotocol/rainbow-bridge-cli"><img src=" https://badge.buildkite.com/93478642b0ddf8e3548c16d2e60c4adbca4fd853520b6a5bca.svg?branch=master" alt="Buildkite Build" /></a>
-    <a href="https://npmjs.com/rainbow-bridge-cli"><img alt="npm" src="https://img.shields.io/npm/v/rainbow-bridge-cli.svg?style=flat-square"></a>
+    <a href="https://buildkite.com/nearprotocol/rainbow-bridge"><img alt="Build status" src="https://badge.buildkite.com/93478642b0ddf8e3548c16d2e60c4adbca4fd853520b6a5bca.svg"/></a>
+    <a href="https://github.com/near/rainbow-bridge"><img alt="Bridge Version" src="https://img.shields.io/github/package-json/v/aurora-is-near/rainbow-bridge"></a>
+    <a href="https://t.me/rainbowbridgesupport"><img alt="Telegram Chat" src="https://img.shields.io/badge/telegram-chat-blue?logo=telegram"></a>
   </p>
 </div>
 
 ## Table of Contents
+
 - [Pre-requisites](#pre-requisites)
 - [Usage](#usage)
 - [Security](#security)
@@ -47,6 +49,7 @@ rustup target add wasm32-unknown-unknown
 - python3 pip , for nearup
 
 #### Install nearup
+
 ```bash
 pip3 install nearup
 
@@ -91,10 +94,11 @@ As of 2020-07-14 (gas price is 40 gwei) the cost of running bridge on NEAR mainn
 ### PoA vs PoW Ethereum networks
 
 Rainbow bridge can be deployed either on PoW or PoA networks. However, the main use case of the bridge is Ethereum Mainnet, which makes its design very PoW-centric and it is only trustless and decentralized for PoW networks. Unfortunately, the only popular PoW testnet is Ropsten, which frequently undergoes huge reorgs of more than [16k blocks](https://github.com/near/rainbow-bridge-cli/issues/329), because people test 51% attacks on it. 16k reorgs can wipe out entire contracts and revert days of computations. Overall, Ropsten has the following unfortunate specifics that does not exist with Ethereum Mainnet:
-* Extremely long re-orgs;
-* Gas price volatility -- Ropsten blocks might have orders of magnitude different median gas price;
-* Slow block production -- sometimes Ropsten blocks are produced once per several minutes;
-* [Infura is unreliable on Ropsten](https://github.com/near/rainbow-bridge-cli/issues/330)
+
+- Extremely long re-orgs;
+- Gas price volatility -- Ropsten blocks might have orders of magnitude different median gas price;
+- Slow block production -- sometimes Ropsten blocks are produced once per several minutes;
+- [Infura is unreliable on Ropsten](https://github.com/near/rainbow-bridge-cli/issues/330)
 
 Therefore we advise users to not use Ropsten for bridge testing. Instead, we recommend using one of Ethereum's PoA testnet. Unfortunately, PoA networks have a differen header format and are also centralized by nature. Therefore when deploying bridge on PoA network please use `--near-client-trusted-signer` parameter. This will force `EthOnNearClient` to not validate Ethereum headers (since PoA headers are not valid PoW headers) and accept them only from the provided authority.
 
@@ -105,85 +109,95 @@ The documenation below assumes Rinkeby testnet.
 This section explains how to use existing bridge with mock ERC20 token that was already deployed. You would need to have some amount of this token on Rinkeby, so reach out to max@near.org if you want to give it a try.
 
 We assume you have two accounts:
-* One NEAR account on NEAR testnet with at least 1 NEAR token. We denote it as `<near_token_holder_account>` and its secret key as `<near_token_holder_sk>`;
-* One Ethereum account on Rinkeby testnet with at least 1 ETH and 100 ERC20 tokens (this example uses ERC20 deployed to `0x8151a8F90267bFf183E06921841C5dE774499388` as an example. If you want some of these ERC20 tokens please contact max@near.org). We denote it as `<eth_token_holder_address>` and its private key as `<eth_token_holder_sk>`;
+
+- One NEAR account on NEAR testnet with at least 1 NEAR token. We denote it as `<near_token_holder_account>` and its secret key as `<near_token_holder_sk>`;
+- One Ethereum account on Rinkeby testnet with at least 1 ETH and 100 ERC20 tokens (this example uses ERC20 deployed to `0x8151a8F90267bFf183E06921841C5dE774499388` as an example. If you want some of these ERC20 tokens please contact max@near.org). We denote it as `<eth_token_holder_address>` and its private key as `<eth_token_holder_sk>`;
 
 Make sure you have rainbow cli installed:
+
 ```bash
 yarn install
 ```
 
 If you have already used the bridge on this machine run a cleanup:
+
 ```bash
 cli/index.js clean
 ```
 
 If you're using rainbow-bridge-cli 1.x, create `~/.rainbow/config.json` file with the following content:
+
 ```json
 {
-        "nearNetworkId": "testnet",
-        "nearNodeUrl": "https://rpc.testnet.near.org/",
-        "ethNodeUrl": "https://rinkeby.infura.io/v3/<project_id>",
-        "nearMasterAccount": "<near_token_holder_account>",
-        "nearMasterSk": "<near_token_holder_sk>",
-        "nearClientAccount": "ethonnearclient10",
-        "nearProverAccount": "ethonnearprover10",
-        "nearClientTrustedSigner": "eth2nearrelay10.testnet",
-        "ethMasterSk": "<eth_token_holder_sk>",
-        "ethEd25519Address": "0x9003342d15B21b4C42e1702447fE2f39FfAF55C2",
-        "ethClientAddress": "0xF721c979db97413AA9D0F91ad531FaBF769bb09C",
-        "ethProverAddress": "0xc5D62d66B8650E6242D9936c7e50E959BA0F9E37",
-        "ethErc20Address": "0x8151a8F90267bFf183E06921841C5dE774499388",
-        "ethLockerAddress": "0x5f7Cc23F90b5264a083dcB3b171c7111Dc32dD00",
-        "nearFunTokenAccount": "mintablefuntoken11"
+  "nearNetworkId": "testnet",
+  "nearNodeUrl": "https://rpc.testnet.near.org/",
+  "ethNodeUrl": "https://rinkeby.infura.io/v3/<project_id>",
+  "nearMasterAccount": "<near_token_holder_account>",
+  "nearMasterSk": "<near_token_holder_sk>",
+  "nearClientAccount": "ethonnearclient10",
+  "nearProverAccount": "ethonnearprover10",
+  "nearClientTrustedSigner": "eth2nearrelay10.testnet",
+  "ethMasterSk": "<eth_token_holder_sk>",
+  "ethEd25519Address": "0x9003342d15B21b4C42e1702447fE2f39FfAF55C2",
+  "ethClientAddress": "0xF721c979db97413AA9D0F91ad531FaBF769bb09C",
+  "ethProverAddress": "0xc5D62d66B8650E6242D9936c7e50E959BA0F9E37",
+  "ethErc20Address": "0x8151a8F90267bFf183E06921841C5dE774499388",
+  "ethLockerAddress": "0x5f7Cc23F90b5264a083dcB3b171c7111Dc32dD00",
+  "nearFunTokenAccount": "mintablefuntoken11"
 }
 ```
 
 If you are using rainbow-bridge-cli 2.x, create `~/.rainbow/config.json` file with the following content:
+
 ```json
 {
-        "nearNetworkId": "testnet",
-        "nearNodeUrl": "https://rpc.testnet.near.org/",
-        "ethNodeUrl": "https://rinkeby.infura.io/v3/<project_id>",
-        "nearMasterAccount": "<near_token_holder_account>",
-        "nearMasterSk": "<near_token_holder_sk>",
-        "nearClientAccount": "ethonnearclient10",
-        "nearProverAccount": "ethonnearprover10",
-        "nearClientTrustedSigner": "eth2nearrelay10.testnet",
-        "ethMasterSk": "<eth_token_holder_sk>",
-        "ethEd25519Address": "0x9003342d15B21b4C42e1702447fE2f39FfAF55C2",
-        "ethClientAddress": "0xF721c979db97413AA9D0F91ad531FaBF769bb09C",
-        "ethProverAddress": "0xc5D62d66B8650E6242D9936c7e50E959BA0F9E37",
-        "nearTokenFactoryAccount": "ntf4.bridge2.testnet",
-        "ethErc20Address": "0x21e7381368baa3f3e9640fe19780c4271ad96f37",
-        "ethLockerAddress": "0x7f66c116a4f51e43e7c1c33d3714a4acfa9c40fb",
-        "nearErc20Account": "21e7381368baa3f3e9640fe19780c4271ad96f37.ntf4.bridge2.testnet"
+  "nearNetworkId": "testnet",
+  "nearNodeUrl": "https://rpc.testnet.near.org/",
+  "ethNodeUrl": "https://rinkeby.infura.io/v3/<project_id>",
+  "nearMasterAccount": "<near_token_holder_account>",
+  "nearMasterSk": "<near_token_holder_sk>",
+  "nearClientAccount": "ethonnearclient10",
+  "nearProverAccount": "ethonnearprover10",
+  "nearClientTrustedSigner": "eth2nearrelay10.testnet",
+  "ethMasterSk": "<eth_token_holder_sk>",
+  "ethEd25519Address": "0x9003342d15B21b4C42e1702447fE2f39FfAF55C2",
+  "ethClientAddress": "0xF721c979db97413AA9D0F91ad531FaBF769bb09C",
+  "ethProverAddress": "0xc5D62d66B8650E6242D9936c7e50E959BA0F9E37",
+  "nearTokenFactoryAccount": "ntf4.bridge2.testnet",
+  "ethErc20Address": "0x21e7381368baa3f3e9640fe19780c4271ad96f37",
+  "ethLockerAddress": "0x7f66c116a4f51e43e7c1c33d3714a4acfa9c40fb",
+  "nearErc20Account": "21e7381368baa3f3e9640fe19780c4271ad96f37.ntf4.bridge2.testnet"
 }
 ```
 
 You can get infura project id, by registering at [infura.io](http://infura.io/).
 
 To transfer ERC20 from ETH to NEAR run:
+
 ```bash
 cli/index.js TESTING transfer-eth-erc20-to-near --amount 10 --eth-sender-sk <eth_token_holder_address> --near-receiver-account <near_token_holder_account>
 ```
 
 (If the command interrupts in the middle re-run it and it will resume the transfer. PoA RPC sometimes has issues)
 Wait for the transfer to finish. You should see:
+
 ```
 Transferred
 Balance of <near_token_holder_account> after the transfer is 10
 ```
 
 To transfer ERC20 back from NEAR to ETH run:
+
 ```bash
 cli/index.js TESTING transfer-eth-erc20-from-near --amount 1 --near-sender-account <near_token_holder_account> --near-sender-sk <near_token_holder_sk> --eth-receiver-address <eth_token_holder_address>
 ```
 
 You should see:
+
 ```
 ERC20 balance of <eth_token_holder_address> after the transfer: 91
 ```
+
 Congratulations, you have achieved a roundtrip of ERC20 token through the bridge!
 
 <!---
@@ -277,7 +291,8 @@ pm2 logs
 
 ### Transferring tokens
 
-Let's check the balance of bridged tokens from ETH to NEAR before starting the transfer. To this end let's use `node0` account, which is automatically created and funded on startup when localnet is started. 
+Let's check the balance of bridged tokens from ETH to NEAR before starting the transfer. To this end let's use `node0` account, which is automatically created and funded on startup when localnet is started.
+
 ```bash
 cli/index.js TESTING get-bridge-on-near-balance --near-receiver-account node0
 ```
@@ -332,22 +347,25 @@ cli/index.js stop bridge-watchdog
 Above steps are ways to run a local bridge and development workflows you need if make any changes to rainbow-bridge-cli. If you want to update any of solidity or rust contracts, they're not in this repo now and workflow is as following.
 
 - Install dependencies:
+
 ```bash
 cli/index.js clean
 cli/index.js prepare
 ```
+
 - Start local NEAR network and Ganache
+
 ```bash
 cli/index.js near-node
 cli/index.js ganache
 ```
+
 - If you want to modify solidity contracts, go to `node_modules/rainbow-bridge-sol`, make changes there and run `./build_all.sh` to recompile solidity contracts.
 - If you want to modify rust contracts, go to `node_modules/ranbow-bridge-rs`, make changes there and run `./build_all.sh` to recompile rust contracts.
 - If you want to modify rainbow bridge lib, go to `node_modules/rainbow-bridge-lib` and make changes there
 - Follow instructions above to init eth contracts and near contracts, start services and start testing with bridge
 - For changes to Solidity contract, Rust contract, and rainbow-bridge-lib, please submit PRs to: https://github.com/near/rainbow-bridge-sol , https://github.com/near/rainbow-bridge-rs , and https://github.com/near/rainbow-bridge-lib respectively.
 - After PR merged in contract repos and rainbow-bridge-lib repo, we will periodically publish them as new version of npm packages. And rainbow-bridge-cli will adopt new version of them.
-
 
 <!---
 The following is outdated.

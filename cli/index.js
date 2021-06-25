@@ -48,8 +48,7 @@ const {
   InitEthProver
 } = require('./init')
 
-// source dir or where rainbow cli is installed (when install with npm)
-// TODO @frol use config
+// Source dir or where rainbow cli is installed (when install with npm)
 const BRIDGE_SRC_DIR = __dirname
 const LIBS_SOL_SRC_DIR = path.join(BRIDGE_SRC_DIR, '..', 'contracts', 'eth')
 const LIBS_RS_SRC_DIR = path.join(BRIDGE_SRC_DIR, '..', 'contracts', 'near')
@@ -64,7 +63,7 @@ RainbowConfig.declareOption('eth-node-url', 'The URL of the Ethereum node.')
 RainbowConfig.declareOption(
   'near-master-account',
   'The account of the master account on NEAR blockchain that can be used to deploy and initialize the test contracts.' +
-    ' This account will also own the initial supply of the fungible tokens.'
+  ' This account will also own the initial supply of the fungible tokens.'
 )
 RainbowConfig.declareOption(
   'near-master-sk',
@@ -188,12 +187,12 @@ RainbowConfig.declareOption(
 )
 RainbowConfig.declareOption(
   'eth-locker-abi-path',
-  'Path to the .abi file defining Ethereum locker contract. This contract works in pair with mintable fungible token on NEAR blockchain.',
+  'Path to the .abi file defining Ethereum locker contract.',
   path.join(LIBS_TC_SRC_DIR, 'res/ERC20Locker.full.abi')
 )
 RainbowConfig.declareOption(
   'eth-locker-bin-path',
-  'Path to the .bin file defining Ethereum locker contract. This contract works in pair with mintable fungible token on NEAR blockchain.',
+  'Path to the .bin file defining Ethereum locker contract.',
   path.join(LIBS_TC_SRC_DIR, 'res/ERC20Locker.full.bin')
 )
 RainbowConfig.declareOption(
@@ -910,6 +909,6 @@ RainbowConfig.addOptions(
   ['near-node-url']
 )
 
-;(async () => {
-  await program.parseAsync(process.argv)
-})()
+  ; (async () => {
+    await program.parseAsync(process.argv)
+  })()
