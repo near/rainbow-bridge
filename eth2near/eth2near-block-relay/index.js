@@ -29,7 +29,7 @@ const {
 const BRIDGE_SRC_DIR = path.join(__dirname, '..', '..')
 const MAX_GAS_PER_BLOCK = '300000000000000'
 
-function ethashproof (command, _callback) {
+function ethashproof(command, _callback) {
   return new Promise((resolve) =>
     exec(command, (error, stdout, _stderr) => {
       if (error) {
@@ -40,8 +40,45 @@ function ethashproof (command, _callback) {
   )
 }
 
+// This function find the result in O(log delta) where delta is the difference between estimatedPosition and the result.
+// In particular if estimatedPosition is the correct value it will make two calls to predicate, so it will behave in O(1) in this case.
+async function binarySearchWithEstimate(limitLo, limitHi, estimatedPosition, predicate) {
+  let lo = limitLo;
+  let hi = limitHi;
+  let value = await predicate(estimatedPosition);
+
+  if (value) {
+    hi = estimatedPosition;
+    let step = 1;
+    while (hi - step > lo && await predicate(hi - step)) {
+      step *= 2;
+    }
+    hi -= Math.floor(step / 2);
+    lo = Math.max(lo, hi - step);
+  } else {
+    lo = estimatedPosition;
+    let step = 1;
+    while (lo + step < hi && !await predicate(lo + step)) {
+      step *= 2;
+    }
+    lo += Math.floor(step / 2);
+    hi = Math.min(hi, lo + step);
+  }
+
+
+  while (lo + 1 < hi) {
+    let mid = Math.floor((lo + hi) / 2);
+    if (await predicate(mid)) {
+      hi = mid;
+    } else {
+      lo = mid;
+    }
+  }
+  return hi;
+}
+
 class Eth2NearRelay {
-  initialize (ethClientContract, {
+  initialize(ethClientContract, {
     ethNodeUrl,
     totalSubmitBlock,
     gasPerTransaction,
@@ -64,13 +101,15 @@ class Eth2NearRelay {
     this.metricsPort = metricsPort
   }
 
-  async run () {
+  async run() {
     const robustWeb3 = this.robustWeb3
     const httpPrometheus = new HttpPrometheus(this.metricsPort, 'near_bridge_eth2near_')
 
     const clientBlockNumberGauge = httpPrometheus.gauge('client_block_number', 'current client block number')
     const chainBlockNumberGauge = httpPrometheus.gauge('chain_block_number', 'current chain block number')
     const errorsOnSubmitCounter = httpPrometheus.counter('errors_on_submit', 'number of errors while submitting header')
+
+    let previousBlockNumber = undefined;
 
     while (true) {
       let clientBlockNumber
@@ -89,28 +128,30 @@ class Eth2NearRelay {
         continue
       }
 
-      // Backtrack if chain switched the fork.
-      while (true) {
+      let predicate = async (value) => {
+        let blockNumber = clientBlockNumber - value;
+        console.log('Checking block:', blockNumber);
         try {
-          const chainBlock = await robustWeb3.getBlock(clientBlockNumber)
+          const chainBlock = await robustWeb3.getBlock(blockNumber)
           const chainBlockHash = chainBlock.hash
           const clientHashes = await this.ethClientContract.known_hashes(
-            clientBlockNumber
+            blockNumber
           )
           if (clientHashes.find((x) => x === chainBlockHash)) {
-            break
+            return true;
           } else {
-            console.log(
-              `Block ${chainBlockHash} height: ${clientBlockNumber} is not known to the client. Backtracking.`
-            )
-            clientBlockNumber -= 1
-            clientBlockNumberGauge.set(clientBlockNumber)
+            return false;
           }
         } catch (e) {
           console.error(e)
-          continue
+          return predicate(value);
         }
-      }
+      };
+
+      let estimatedValued = (previousBlockNumber === undefined) ? 0 : clientBlockNumber - (previousBlockNumber + this.totalSubmitBlock);
+      let delta = await binarySearchWithEstimate(-1, 1000000000, estimatedValued, predicate);
+      clientBlockNumber -= delta;
+      previousBlockNumber = clientBlockNumber;
 
       if (clientBlockNumber < chainBlockNumber) {
         try {
@@ -142,8 +183,7 @@ class Eth2NearRelay {
           const task = this.ethClientContract.account.signAndSendTransaction(this.ethClientContract.contractId, actions)
 
           console.log(
-            `Submit txn to add block ${
-              clientBlockNumber + 1
+            `Submit txn to add block ${clientBlockNumber + 1
             } to block ${endBlock}`
           )
 
@@ -162,7 +202,7 @@ class Eth2NearRelay {
     }
   }
 
-  async getParseBlock (blockNumber) {
+  async getParseBlock(blockNumber) {
     try {
       const block = await this.robustWeb3.getBlock(blockNumber)
       const blockRlp = this.web3.utils.bytesToHex(
@@ -177,7 +217,7 @@ class Eth2NearRelay {
     }
   }
 
-  submitBlock (block, blockNumber) {
+  submitBlock(block, blockNumber) {
     const h512s = block.elements
       .filter((_, index) => index % 2 === 0)
       .map((element, index) => {
