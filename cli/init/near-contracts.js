@@ -26,7 +26,7 @@ class InitNearContracts {
     nearProverInitBalance,
     nearNodeUrl,
     nearNetworkId,
-    nearClientValidateEthhash,
+    nearClientValidateEthash,
     nearClientTrustedSigner,
     ethNodeUrl
   }) {
@@ -101,7 +101,7 @@ class InitNearContracts {
       hashesGcThreshold,
       finalizedGcThreshold,
       numConfirmations,
-      nearClientValidateEthhash === 'true',
+      nearClientValidateEthash === 'true',
       nearClientTrustedSigner || null,
       robustWeb3
     )
