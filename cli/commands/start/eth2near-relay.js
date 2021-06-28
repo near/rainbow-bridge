@@ -76,7 +76,7 @@ class StartEth2NearRelayCommand {
       )
       await clientContract.accessKeyInit()
       console.log('Initializing eth2near-relay...', { ethNodeUrl, metricsPort })
-      relay.initialize(clientContract, { ethNodeUrl, totalSubmitBlock, gasPerTransaction, metricsPort, nearClientValidateHeaderMode})
+      relay.initialize(clientContract, { ethNodeUrl, totalSubmitBlock, gasPerTransaction, metricsPort, nearClientValidateHeaderMode })
       console.log('Starting eth2near-relay...')
       await relay.run()
     }

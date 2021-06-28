@@ -48,7 +48,7 @@ class Eth2NearRelay {
     metricsPort,
     nearClientValidateHeaderMode
   }) {
-    this.validateHeaderMode = nearClientValidateHeaderMode;
+    this.validateHeaderMode = nearClientValidateHeaderMode
     this.gasPerTransaction = new BN(gasPerTransaction)
     const limitSubmitBlock = new BN(MAX_GAS_PER_BLOCK).div(this.gasPerTransaction).toNumber()
     this.totalSubmitBlock = parseInt(totalSubmitBlock)
@@ -127,12 +127,10 @@ class Eth2NearRelay {
             endBlock = clientBlockNumber + 1
           }
           for (let i = clientBlockNumber + 1; i <= endBlock; i++) {
-
-            if (this.validateHeaderMode == "bsc"){
+            if (this.validateHeaderMode === 'bsc') {
               const block = await this.robustWeb3.getBlock(i)
-              blockPromises.push({header_rlp: block})
-
-            }else {
+              blockPromises.push({ header_rlp: block })
+            } else {
               blockPromises.push(this.getParseBlock(i))
             }
           }
@@ -188,14 +186,14 @@ class Eth2NearRelay {
   }
 
   submitBlock (block, blockNumber) {
-    let args = {};
+    let args = {}
 
-    if (this.validateHeaderMode == "bsc"){
+    if (this.validateHeaderMode === 'bsc') {
       args = {
         block_header: web3BlockToRlp(block.header_rlp),
         dag_nodes: []
       }
-    }else{
+    } else {
       const h512s = block.elements
         .filter((_, index) => index % 2 === 0)
         .map((element, index) => {
@@ -204,7 +202,7 @@ class Eth2NearRelay {
             this.web3.utils.padLeft(block.elements[index * 2 + 1], 64).substr(2)
           )
         })
-  
+
       args = {
         block_header: this.web3.utils.hexToBytes(block.header_rlp),
         dag_nodes: h512s

@@ -162,6 +162,15 @@ lazy_static! {
         eloop.into_remote();
         web3::Web3::new(transport)
     };
+
+    static ref BSC_WEB3RS: web3::Web3<web3::transports::Http> = {
+        let (eloop, transport) = web3::transports::Http::new(
+            "https://data-seed-prebsc-1-s1.binance.org:8545",
+        )
+        .unwrap();
+        eloop.into_remote();
+        web3::Web3::new(transport)
+    };
 }
 
 fn get_context(input: Vec<u8>, is_view: bool) -> VMContext {
@@ -513,6 +522,57 @@ fn add_two_blocks_from_8996776() {
     // Skip parent header hash
     let hashes = &hashes[1..];
     assert_hashes_equal_to_contract_hashes(&contract, &heights, &hashes);
+}
+
+#[test]
+// Test init bsc bridge. 
+fn bsc_add_epoch_header(){
+    testing_env!(get_context(vec![], false));
+    let (blocks, hashes) = get_blocks(&BSC_WEB3RS, 10_161_600, 10_161_601);
+
+    let contract =  EthClient::init(
+        true,
+        String::from("bsc"),
+        0,
+        read_roots_collection().dag_merkle_roots,
+        blocks[0].clone(),
+        30,
+        10,
+        10,
+        None,
+        97,
+    );
+
+    assert!(hashes[0] == contract.epoch_header)
+}
+
+#[test]
+// test validate bsc headers.
+fn bsc_update_epoch_header(){
+    testing_env!(get_context(vec![], false));
+    let (blocks, hashes) = get_blocks(&BSC_WEB3RS, 10_161_400, 10_161_450);
+
+    let mut contract =  EthClient::init(
+        true,
+        String::from("bsc"),
+        0,
+        read_roots_collection().dag_merkle_roots,
+        blocks[0].clone(),
+        30,
+        51,
+        51,
+        None,
+        97,
+    );
+    
+    for block in blocks
+        .into_iter()
+        .skip(1)
+    {
+        contract.add_block_header(block, vec![]);
+    }
+    assert!(hashes[0] == contract.epoch_header);
+    assert!(contract.headers.len() == 50);
 }
 
 #[test]

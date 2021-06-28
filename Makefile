@@ -18,14 +18,19 @@ gen-contracts:
 	cd contracts/eth/nearbridge/ && yarn && yarn build
 	cd contracts/eth/nearprover/ && yarn && yarn build
 	
+# start near blockchain and connect with ganache.
+start-ethash:
+	cli/index.js clean
+	cli/index.js prepare
+	cli/index.js start near-node
+	cli/index.js start ganache
+
 # start near blockchain and connect with binance test net.
 start-bsc:
 	cli/index.js clean
-	cli/index.js prepare --core-src ${HOME}/Desktop/core
+	cli/index.js prepare
 	cli/index.js start near-node
 	cli/index.js start binance-smart-chain
-
-
 
 # deploy contracts
 full-bsc-contracts:
@@ -45,7 +50,7 @@ light-bsc-contracts:
 # start-relayer eth2near-relay, near2eth-relay and bridge-watchdog
 start-relayer:
 	cli/index.js start eth2near-relay
-	cli/index.js start near2eth-relay 
+	cli/index.js start near2eth-relay
 	cli/index.js start bridge-watchdog
 	pm2 logs
 
@@ -58,4 +63,4 @@ build-eth-client:
 test-eth-client:
 	cd contracts/near/eth-client && ./test.sh
 
-.PHONEY: help init start-ethash start-bsc gen-contracts deploy-contracts start-relayer stop-all build-eth-client
+.PHONY: help init yarn-init gen-contracts start-bsc full-bsc-contracts light-bsc-contracts start-relayer stop-all build-eth-client test-eth-client start-ethash
