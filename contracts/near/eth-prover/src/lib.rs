@@ -246,6 +246,18 @@ impl EthProver {
             }
         }
     }
+
+    pub fn set_bridge(&mut self, bridge: AccountId) {
+        assert_self();
+        env::log(
+            format!(
+                "Old bridge account: {} New bridge account {}",
+                self.bridge_smart_contract, bridge
+            )
+            .as_bytes(),
+        );
+        self.bridge_smart_contract = bridge;
+    }
 }
 
 admin_controlled::impl_admin_controlled!(EthProver, paused);

@@ -61,6 +61,8 @@ func main() {
 		}
 	}
 
+	fmt.Printf("SealHash: %s\n", ethash.Instance.SealHash(header))
+
 	indices := ethash.Instance.GetVerificationIndices(
 		blockno,
 		ethash.Instance.SealHash(header),

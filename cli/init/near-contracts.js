@@ -10,7 +10,7 @@ const {
 } = require('rainbow-bridge-eth2near-block-relay')
 
 class InitNearContracts {
-  static async execute ({
+  static async execute({
     nearMasterAccount,
     nearMasterSk,
     nearClientAccount,
@@ -103,7 +103,8 @@ class InitNearContracts {
       numConfirmations,
       nearClientValidateEthhash === 'true',
       nearClientTrustedSigner || null,
-      robustWeb3
+      robustWeb3,
+      nearNetworkId
     )
     const proverContract = new EthOnNearProverContract(
       new nearAPI.Account(near.connection, nearProverAccount),

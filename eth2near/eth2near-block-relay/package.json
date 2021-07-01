@@ -20,10 +20,11 @@
     "bn.js": "^5.1.3",
     "eth-object": "near/eth-object#54e03b8aac8208cf724e206d49ffb8bdd30451d7",
     "eth-util-lite": "near/eth-util-lite#master",
-    "ethereumjs-block": "^2.2.2",
+    "@ethereumjs/block": "^3.3.0",
     "merkle-patricia-tree": "^2.1.2",
     "prom-client": "^12.0.0",
     "promisfy": "^1.2.0",
-    "rainbow-bridge-utils": "1.0.0"
+    "rainbow-bridge-utils": "1.0.0",
+    "got": "^11.8.2"
   }
 }

@@ -60,7 +60,7 @@ func hashimotoLightIndices(size uint64, cache []uint32, hash []byte, nonce uint6
 
 func hashimotoIndices(hash []byte, nonce uint64, size uint64, lookup func(index uint32) []uint32) []uint32 {
 	result := []uint32{}
-	// Calculate the number of thoretical rows (we use one buffer nonetheless)
+	// Calculate the number of theoretical rows (we use one buffer nonetheless)
 	rows := uint32(size / mixBytes)
 
 	// Combine header+nonce into a 64 byte seed

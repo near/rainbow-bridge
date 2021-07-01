@@ -3,6 +3,7 @@
 const Web3 = require('web3')
 const _ = require('lodash')
 const nearAPI = require('near-api-js')
+const got = require('got')
 
 const RETRY = 10
 const DELAY = 500
@@ -24,12 +25,12 @@ const backoff = (retries, fn, delay = DELAY, wait = BACKOFF) =>
 const SLOW_TX_ERROR_MSG = 'transaction not executed within 5 minutes'
 
 class RobustWeb3 {
-  constructor (ethNodeUrl) {
+  constructor(ethNodeUrl) {
     this.ethNodeUrl = ethNodeUrl
     this.web3 = new Web3(ethNodeUrl)
   }
 
-  async getBlockNumber () {
+  async getBlockNumber() {
     return await backoff(RETRY, async () => {
       try {
         return await this.web3.eth.getBlockNumber()
@@ -42,7 +43,7 @@ class RobustWeb3 {
     })
   }
 
-  async getBlock (b) {
+  async getBlock(b) {
     return await backoff(RETRY, async () => {
       try {
         const block = await this.web3.eth.getBlock(b)
@@ -61,7 +62,7 @@ class RobustWeb3 {
     })
   }
 
-  async callContract (contract, method, args, options) {
+  async callContract(contract, method, args, options) {
     let gasPrice = await this.web3.eth.getGasPrice()
     let nonce = await this.web3.eth.getTransactionCount(options.from, 'pending')
     while (gasPrice < 10000 * 1e9) {
@@ -149,7 +150,7 @@ class RobustWeb3 {
     throw new Error('Cannot finish txn within 1e13 gas')
   }
 
-  async getTransactionReceipt (t) {
+  async getTransactionReceipt(t) {
     return await backoff(RETRY, async () => {
       try {
         return await this.web3.eth.getTransactionReceipt(t)
@@ -162,7 +163,7 @@ class RobustWeb3 {
     })
   }
 
-  destroy () {
+  destroy() {
     if (this.web3.currentProvider.connection && this.web3.currentProvider.connection.close) {
       // Only WebSocket provider has close, HTTPS don't
       this.web3.currentProvider.connection.close()
@@ -170,7 +171,7 @@ class RobustWeb3 {
   }
 }
 
-function normalizeEthKey (key) {
+function normalizeEthKey(key) {
   let result = key.toLowerCase()
   if (!result.startsWith('0x')) {
     result = '0x' + result
@@ -193,7 +194,7 @@ const promiseWithTimeout = (timeoutMs, promise, failureMessage) => {
   })
 }
 
-async function nearJsonContractFunctionCall (
+async function nearJsonContractFunctionCall(
   contractId,
   sender,
   method,
@@ -240,17 +241,17 @@ const signAndSendTransaction = async (
       } else {
         const status = await account.connection.provider.status()
         let signedTx
-        ;[txHash, signedTx] = await nearAPI.transactions.signTransaction(
-          receiverId,
-          ++accessKey.nonce,
-          actions,
-          nearAPI.utils.serialize.base_decode(
-            status.sync_info.latest_block_hash
-          ),
-          account.connection.signer,
-          account.accountId,
-          account.connection.networkId
-        )
+          ;[txHash, signedTx] = await nearAPI.transactions.signTransaction(
+            receiverId,
+            ++accessKey.nonce,
+            actions,
+            nearAPI.utils.serialize.base_decode(
+              status.sync_info.latest_block_hash
+            ),
+            account.connection.signer,
+            account.accountId,
+            account.connection.networkId
+          )
         const bytes = signedTx.encode()
         sendTxnAsync = async () => {
           await account.connection.provider.sendJsonRpc('broadcast_tx_async', [

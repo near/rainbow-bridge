@@ -12,3 +12,6 @@
 *.out
 
 ethashproof
+
+# Keep cache tool in the repository
+!cmd/cache/main.go

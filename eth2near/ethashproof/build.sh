@@ -1,3 +1,4 @@
+#!/bin/bash
 cd cmd/epoch
 go build -v
 cd ../relayer
