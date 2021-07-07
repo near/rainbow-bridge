@@ -15,3 +15,6 @@ rlp = "0.4.2"
 rlp-derive = "0.1.0"
 ethereum-types = "0.9.2"
 derive_more = "^0.99.2"
+
+[features]
+eip1559 = []

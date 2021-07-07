@@ -28,3 +28,4 @@ near-runtime-standalone = { git = "https://github.com/nearprotocol/nearcore.git"
 
 [features]
 expensive_tests = []
+eip1559 = ["eth-types/eip1559"]

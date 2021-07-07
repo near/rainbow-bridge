@@ -5,10 +5,10 @@ use derive_more::{
 };
 use ethereum_types;
 use rlp::{
-    Decodable as RlpDecodable, DecoderError as RlpDecoderError, Encodable as RlpEncodable, Rlp,
-    RlpStream,
+    Decodable as RlpDecodable, DecoderError as RlpDecoderError, DecoderError,
+    Encodable as RlpEncodable, Rlp, RlpStream,
 };
-use rlp_derive::{RlpDecodable as RlpDecodableDerive, RlpEncodable as RlpEncodableDerive};
+use rlp_derive::RlpDecodable as RlpDecodableDerive;
 #[cfg(not(target_arch = "wasm32"))]
 use serde::{Deserialize, Serialize};
 use std::io::{Error, Write};
@@ -193,6 +193,7 @@ pub struct BlockHeader {
     pub extra_data: Vec<u8>,
     pub mix_hash: H256,
     pub nonce: H64,
+    #[cfg(feature = "eip1559")]
     pub base_fee_per_gas: u64,
 
     pub hash: Option<H256>,
@@ -222,6 +223,8 @@ impl BlockHeader {
         stream.append(&self.gas_used);
         stream.append(&self.timestamp);
         stream.append(&self.extra_data);
+
+        #[cfg(feature = "eip1559")]
         stream.append(&self.base_fee_per_gas);
 
         if !partial {
@@ -255,6 +258,7 @@ impl RlpDecodable for BlockHeader {
             extra_data: serialized.val_at(12)?,
             mix_hash: serialized.val_at(13)?,
             nonce: serialized.val_at(14)?,
+            #[cfg(feature = "eip1559")]
             base_fee_per_gas: serialized.val_at(15)?,
             hash: Some(near_keccak256(serialized.as_raw()).into()),
             partial_hash: None,
@@ -304,12 +308,48 @@ impl rlp::Encodable for LogEntry {
 
 // Receipt Header
 
-#[derive(Debug, Clone, PartialEq, Eq, RlpEncodableDerive, RlpDecodableDerive)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Receipt {
     pub status: bool,
     pub gas_used: U256,
     pub log_bloom: Bloom,
     pub logs: Vec<LogEntry>,
+}
+
+impl rlp::Decodable for Receipt {
+    fn decode(rlp: &Rlp) -> Result<Self, DecoderError> {
+        let mut view = rlp.as_raw();
+
+        // https://eips.ethereum.org/EIPS/eip-2718
+        if let Some(&byte) = view.first() {
+            // https://eips.ethereum.org/EIPS/eip-2718#receipts
+            // If the first byte is between 0 and 0x7f it is an envelop receipt
+            if byte <= 0x7f {
+                view = &view[1..];
+            }
+        }
+
+        rlp::decode::<RlpDeriveReceipt>(view).map(Into::into)
+    }
+}
+
+#[derive(RlpDecodableDerive)]
+pub struct RlpDeriveReceipt {
+    pub status: bool,
+    pub gas_used: U256,
+    pub log_bloom: Bloom,
+    pub logs: Vec<LogEntry>,
+}
+
+impl From<RlpDeriveReceipt> for Receipt {
+    fn from(receipt: RlpDeriveReceipt) -> Self {
+        Self {
+            status: receipt.status,
+            gas_used: receipt.gas_used,
+            log_bloom: receipt.log_bloom,
+            logs: receipt.logs,
+        }
+    }
 }
 
 pub fn near_sha256(data: &[u8]) -> [u8; 32] {
