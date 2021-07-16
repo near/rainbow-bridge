@@ -173,6 +173,23 @@ pub type Secret = H256;
 pub type Public = H512;
 pub type Signature = H520;
 
+// Account State
+#[derive(Debug, Clone, BorshDeserialize, BorshSerialize)]
+#[cfg_attr(not(target_arch = "wasm32"), derive(Serialize, Deserialize))]
+pub struct AccountState {
+    pub storage_root: H256,
+}
+
+impl RlpDecodable for AccountState {
+    fn decode(serialized: &Rlp) -> Result<Self, RlpDecoderError> {
+        let account_root = AccountState {
+            storage_root: serialized.val_at(2)?, // todo - position check
+        };
+
+        Ok(account_root)
+    }
+}
+
 // Block Header
 
 #[derive(Debug, Clone, BorshDeserialize, BorshSerialize)]
