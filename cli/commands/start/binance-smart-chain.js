@@ -5,9 +5,17 @@ class StartBinanceSmartChainNodeCommand {
       nearClientValidateHeader = 'true'
     }
 
+    if (ethNodeUrl === '') {
+      throw new Error('--eth-node-url not set')
+    }
+
+    if (ethMasterSk === '') {
+      throw new Error('--eth-master-sk not set')
+    }
+
     return {
-      ethNodeUrl: ethNodeUrl !== '' ? ethNodeUrl : 'https://data-seed-prebsc-1-s1.binance.org:8545',
-      ethMasterSk: ethMasterSk !== '' ? ethMasterSk : '0x2bdd21761a483f71054e14f5b827213567971c676928d9a1808cbfa4b7501200',
+      ethNodeUrl: ethNodeUrl,
+      ethMasterSk: ethMasterSk,
       nearClientValidateHeader: nearClientValidateHeader,
       nearClientValidateHeaderMode: 'bsc'
     }

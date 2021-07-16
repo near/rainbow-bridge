@@ -30,10 +30,12 @@ start-bsc:
 	cli/index.js clean
 	cli/index.js prepare
 	cli/index.js start near-node
-	cli/index.js start binance-smart-chain
+	cli/index.js start binance-smart-chain \
+	--eth-node-url https://data-seed-prebsc-1-s1.binance.org:8545 \
+	--eth-master-sk 0x2bdd21761a483f71054e14f5b827213567971c676928d9a1808cbfa4b7501200
 
 # deploy contracts
-full-bsc-contracts:
+full-contracts:
 	cli/index.js init-near-contracts
 	cli/index.js init-eth-ed25519
 	cli/index.js init-eth-client --eth-client-lock-eth-amount 1000 --eth-client-lock-duration 10
@@ -61,6 +63,6 @@ build-eth-client:
 	cd contracts/near/eth-client && sudo ./build.sh
 
 test-eth-client:
-	cd contracts/near/eth-client && ./test.sh
+	cd contracts/near/eth-client && sudo ./test.sh
 
 .PHONY: help init yarn-init gen-contracts start-bsc full-bsc-contracts light-bsc-contracts start-relayer stop-all build-eth-client test-eth-client start-ethash
