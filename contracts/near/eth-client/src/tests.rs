@@ -162,6 +162,12 @@ lazy_static! {
         eloop.into_remote();
         web3::Web3::new(transport)
     };
+    static ref BSC_WEB3RS: web3::Web3<web3::transports::Http> = {
+        let (eloop, transport) =
+            web3::transports::Http::new("https://data-seed-prebsc-1-s1.binance.org:8545").unwrap();
+        eloop.into_remote();
+        web3::Web3::new(transport)
+    };
 }
 
 fn get_context(input: Vec<u8>, is_view: bool) -> VMContext {
@@ -227,16 +233,17 @@ fn read_block_raw(filename: String) -> BlockWithProofsRaw {
     serde_json::from_reader(std::fs::File::open(std::path::Path::new(&filename)).unwrap()).unwrap()
 }
 
-fn assert_hashes_equal_to_contract_hashes(contract: &EthClient, heights: &[u64], real_hashes: &[H256]) {
+fn assert_hashes_equal_to_contract_hashes(
+    contract: &EthClient,
+    heights: &[u64],
+    real_hashes: &[H256],
+) {
     let hashes_from_contract: Vec<H256> = heights
         .iter()
         .map(|height| contract.block_hash(*height).unwrap())
         .collect();
 
-    for (hash, hash_from_contract) in real_hashes
-        .into_iter()
-        .zip(hashes_from_contract.iter())
-    {
+    for (hash, hash_from_contract) in real_hashes.into_iter().zip(hashes_from_contract.iter()) {
         assert_eq!(hash, hash_from_contract);
     }
 }
@@ -245,10 +252,11 @@ fn assert_hashes_equal_to_contract_hashes(contract: &EthClient, heights: &[u64],
 fn add_dags_merkle_roots() {
     testing_env!(get_context(vec![], false));
     let (blocks, _) = get_blocks(&WEB3RS, 400_000, 400_001);
-
+    let chain_id = 3;
     let dmr = read_roots_collection();
     let contract = EthClient::init(
         true,
+        String::from("ethash"),
         0,
         read_roots_collection().dag_merkle_roots,
         blocks[0].clone(),
@@ -256,6 +264,7 @@ fn add_dags_merkle_roots() {
         10,
         10,
         None,
+        chain_id,
     );
 
     assert_eq!(dmr.dag_merkle_roots[0], contract.dag_merkle_root(0));
@@ -278,9 +287,10 @@ fn add_blocks_2_and_3() {
         .iter()
         .map(|filename| read_block((&filename).to_string()))
         .collect();
-
+    let chain_id = 3;
     let mut contract = EthClient::init(
         true,
+        String::from("ethash"),
         0,
         read_roots_collection().dag_merkle_roots,
         blocks[0].clone(),
@@ -288,6 +298,7 @@ fn add_blocks_2_and_3() {
         10,
         10,
         None,
+        chain_id,
     );
 
     for (block, proof) in blocks
@@ -309,23 +320,20 @@ fn add_blocks_before_and_after_istanbul_fork() {
     testing_env!(get_context(vec![], false));
 
     const FORK_HEIGHT_ISTANBUL: usize = 9_069_000;
-    let (blocks, hashes) = get_blocks(
-        &WEB3RS,
-        FORK_HEIGHT_ISTANBUL - 2,
-        FORK_HEIGHT_ISTANBUL + 2
-    );
+    let (blocks, hashes) = get_blocks(&WEB3RS, FORK_HEIGHT_ISTANBUL - 2, FORK_HEIGHT_ISTANBUL + 2);
 
     let blocks_with_proofs: Vec<BlockWithProofs> = [
         format!("./src/data/proof_block_{}.json", FORK_HEIGHT_ISTANBUL - 1),
         format!("./src/data/proof_block_{}.json", FORK_HEIGHT_ISTANBUL),
         format!("./src/data/proof_block_{}.json", FORK_HEIGHT_ISTANBUL + 1),
     ]
-        .iter()
-        .map(|filename| read_block((&filename).to_string()))
-        .collect();
-
+    .iter()
+    .map(|filename| read_block((&filename).to_string()))
+    .collect();
+    let chain_id = 3;
     let mut contract = EthClient::init(
         true,
+        String::from("ethash"),
         0,
         read_roots_collection().dag_merkle_roots,
         blocks[0].clone(),
@@ -333,6 +341,7 @@ fn add_blocks_before_and_after_istanbul_fork() {
         10,
         10,
         None,
+        chain_id,
     );
 
     for (block, proof) in blocks
@@ -342,7 +351,6 @@ fn add_blocks_before_and_after_istanbul_fork() {
     {
         contract.add_block_header(block, proof.to_double_node_with_merkle_proof_vec());
     }
-
 
     let heights = [
         FORK_HEIGHT_ISTANBUL as u64 - 1,
@@ -363,20 +371,30 @@ fn add_blocks_before_and_after_nov11_2020_unannounced_fork() {
     let (blocks, hashes) = get_blocks(
         &WEB3RS,
         FORK_HEIGHT_UNANNOUNCED_NOV_11_2020 - 2,
-        FORK_HEIGHT_UNANNOUNCED_NOV_11_2020 + 2
+        FORK_HEIGHT_UNANNOUNCED_NOV_11_2020 + 2,
     );
 
     let blocks_with_proofs: Vec<BlockWithProofs> = [
-        format!("./src/data/proof_block_{}.json", FORK_HEIGHT_UNANNOUNCED_NOV_11_2020 - 1),
-        format!("./src/data/proof_block_{}.json", FORK_HEIGHT_UNANNOUNCED_NOV_11_2020),
-        format!("./src/data/proof_block_{}.json", FORK_HEIGHT_UNANNOUNCED_NOV_11_2020 + 1),
+        format!(
+            "./src/data/proof_block_{}.json",
+            FORK_HEIGHT_UNANNOUNCED_NOV_11_2020 - 1
+        ),
+        format!(
+            "./src/data/proof_block_{}.json",
+            FORK_HEIGHT_UNANNOUNCED_NOV_11_2020
+        ),
+        format!(
+            "./src/data/proof_block_{}.json",
+            FORK_HEIGHT_UNANNOUNCED_NOV_11_2020 + 1
+        ),
     ]
-        .iter()
-        .map(|filename| read_block((&filename).to_string()))
-        .collect();
-
+    .iter()
+    .map(|filename| read_block((&filename).to_string()))
+    .collect();
+    let chain_id = 3;
     let mut contract = EthClient::init(
         true,
+        String::from("ethash"),
         0,
         read_roots_collection().dag_merkle_roots,
         blocks[0].clone(),
@@ -384,6 +402,7 @@ fn add_blocks_before_and_after_nov11_2020_unannounced_fork() {
         10,
         10,
         None,
+        chain_id,
     );
 
     for (block, proof) in blocks
@@ -408,12 +427,20 @@ fn add_block_diverged_until_ethashproof_dataset_fix() {
     testing_env!(get_context(vec![], false));
 
     const HEIGHT_DIVERGED_BLOCK: usize = 11_703_828;
-    let (blocks, hashes) = get_blocks(&WEB3RS, HEIGHT_DIVERGED_BLOCK - 1, HEIGHT_DIVERGED_BLOCK + 1);
+    let (blocks, hashes) = get_blocks(
+        &WEB3RS,
+        HEIGHT_DIVERGED_BLOCK - 1,
+        HEIGHT_DIVERGED_BLOCK + 1,
+    );
     // Jan 22 2021
-    let block_with_proof = read_block(format!("./src/data/proof_block_{}.json", HEIGHT_DIVERGED_BLOCK));
-
+    let block_with_proof = read_block(format!(
+        "./src/data/proof_block_{}.json",
+        HEIGHT_DIVERGED_BLOCK
+    ));
+    let chain_id = 3;
     let mut contract = EthClient::init(
         true,
+        String::from("ethash"),
         0,
         read_roots_collection().dag_merkle_roots,
         blocks[0].clone(),
@@ -421,10 +448,17 @@ fn add_block_diverged_until_ethashproof_dataset_fix() {
         500,
         20,
         None,
+        chain_id,
     );
 
-    contract.add_block_header(blocks[1].clone(), block_with_proof.to_double_node_with_merkle_proof_vec());
-    assert_eq!(hashes[1], contract.block_hash(HEIGHT_DIVERGED_BLOCK as u64).unwrap());
+    contract.add_block_header(
+        blocks[1].clone(),
+        block_with_proof.to_double_node_with_merkle_proof_vec(),
+    );
+    assert_eq!(
+        hashes[1],
+        contract.block_hash(HEIGHT_DIVERGED_BLOCK as u64).unwrap()
+    );
 }
 
 #[test]
@@ -440,10 +474,11 @@ fn add_400000_block_only() {
     // ethash result: 0x00000000000ca599ebe9913fa00da78a4d1dd2fa154c4fd2aad10ccbca52a2a1
     // Proof length: 24
     // [400000.json]
-
+    let chain_id = 3;
     let block_with_proof = read_block(format!("./src/data/{}.json", block_height));
     let mut contract = EthClient::init(
         true,
+        String::from("ethash"),
         400_000 / 30000,
         vec![block_with_proof.merkle_root],
         blocks[0].clone(),
@@ -451,8 +486,12 @@ fn add_400000_block_only() {
         10,
         10,
         None,
+        chain_id,
     );
-    contract.add_block_header(blocks[1].clone(), block_with_proof.to_double_node_with_merkle_proof_vec());
+    contract.add_block_header(
+        blocks[1].clone(),
+        block_with_proof.to_double_node_with_merkle_proof_vec(),
+    );
     assert_eq!(hashes[1], contract.block_hash(block_height as u64).unwrap());
 }
 
@@ -469,12 +508,14 @@ fn add_two_blocks_from_8996776() {
         format!("./src/data/{}.json", block_height),
         format!("./src/data/{}.json", block_height + 1),
     ]
-        .iter()
-        .map(|filename| read_block((&filename).to_string()))
-        .collect();
+    .iter()
+    .map(|filename| read_block((&filename).to_string()))
+    .collect();
+    let chain_id = 3;
 
     let mut contract = EthClient::init(
         true,
+        String::from("ethash"),
         0,
         read_roots_collection().dag_merkle_roots,
         blocks[0].clone(),
@@ -482,6 +523,7 @@ fn add_two_blocks_from_8996776() {
         10,
         10,
         None,
+        chain_id,
     );
 
     for (block, proof) in blocks
@@ -492,13 +534,58 @@ fn add_two_blocks_from_8996776() {
         contract.add_block_header(block, proof.to_double_node_with_merkle_proof_vec());
     }
 
-    let heights = [
-        block_height as u64,
-        block_height as u64 + 1,
-    ];
+    let heights = [block_height as u64, block_height as u64 + 1];
     // Skip parent header hash
     let hashes = &hashes[1..];
     assert_hashes_equal_to_contract_hashes(&contract, &heights, &hashes);
+}
+
+#[test]
+// Test init bsc bridge.
+fn bsc_add_epoch_header() {
+    testing_env!(get_context(vec![], false));
+    let (blocks, hashes) = get_blocks(&BSC_WEB3RS, 10_161_600, 10_161_601);
+    let chain_id = 97;
+    let contract = EthClient::init(
+        true,
+        String::from("bsc"),
+        0,
+        read_roots_collection().dag_merkle_roots,
+        blocks[0].clone(),
+        30,
+        10,
+        10,
+        None,
+        chain_id,
+    );
+
+    assert!(hashes[0] == contract.epoch_header)
+}
+
+#[test]
+// test validate bsc headers.
+fn bsc_update_epoch_header() {
+    testing_env!(get_context(vec![], false));
+    let (blocks, hashes) = get_blocks(&BSC_WEB3RS, 10_161_400, 10_161_450);
+    let chain_id = 97;
+    let mut contract = EthClient::init(
+        true,
+        String::from("bsc"),
+        0,
+        read_roots_collection().dag_merkle_roots,
+        blocks[0].clone(),
+        30,
+        51,
+        51,
+        None,
+        chain_id,
+    );
+
+    for block in blocks.into_iter().skip(1) {
+        contract.add_block_header(block, vec![]);
+    }
+    assert!(hashes[0] == contract.epoch_header);
+    assert!(contract.headers.len() == 50);
 }
 
 #[test]
@@ -519,12 +606,14 @@ fn add_two_blocks_from_400000() {
         format!("./src/data/{}.json", block_height),
         format!("./src/data/{}.json", block_height + 1),
     ]
-        .iter()
-        .map(|filename| read_block((&filename).to_string()))
-        .collect();
+    .iter()
+    .map(|filename| read_block((&filename).to_string()))
+    .collect();
+    let chain_id = 3;
 
     let mut contract = EthClient::init(
         true,
+        String::from("ethash"),
         400_000 / 30000,
         vec![blocks_with_proofs.first().unwrap().merkle_root],
         blocks[0].clone(),
@@ -532,6 +621,7 @@ fn add_two_blocks_from_400000() {
         10,
         10,
         None,
+        chain_id,
     );
 
     for (block, proof) in blocks
@@ -542,10 +632,7 @@ fn add_two_blocks_from_400000() {
         contract.add_block_header(block, proof.to_double_node_with_merkle_proof_vec());
     }
 
-    let heights = [
-        block_height as u64,
-        block_height as u64 + 1,
-    ];
+    let heights = [block_height as u64, block_height as u64 + 1];
     // Skip parent header hash
     let hashes = &hashes[1..];
     assert_hashes_equal_to_contract_hashes(&contract, &heights, &hashes);
@@ -583,9 +670,10 @@ fn predumped_block_can_be_added() {
     let start_block_height = blocks_with_proofs.first().unwrap().0;
 
     let first_block_with_proof = read_block(blocks_with_proofs.first().unwrap().1.to_string());
-
+    let chain_id = 3;
     let mut contract = EthClient::init(
         true,
+        String::from("ethash"),
         start_block_height / 30000,
         vec![first_block_with_proof.merkle_root],
         first_block_with_proof.header_rlp.0.clone(),
@@ -593,6 +681,7 @@ fn predumped_block_can_be_added() {
         10,
         10,
         None,
+        chain_id,
     );
 
     let bar = ProgressBar::new(blocks_with_proofs.len() as _);

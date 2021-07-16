@@ -24,7 +24,8 @@ class StartGanacheNodeCommand {
     return {
       ethNodeUrl: 'ws://localhost:9545',
       ethMasterSk: '0x2bdd21761a483f71054e14f5b827213567971c676928d9a1808cbfa4b7501200',
-      nearClientValidateEthash: 'false'
+      nearClientValidateHeader: 'false',
+      nearClientValidateHeaderMode: 'ethash'
     }
   }
 }

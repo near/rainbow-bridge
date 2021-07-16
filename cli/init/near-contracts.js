@@ -26,7 +26,8 @@ class InitNearContracts {
     nearProverInitBalance,
     nearNodeUrl,
     nearNetworkId,
-    nearClientValidateEthhash,
+    nearClientValidateHeader,
+    nearClientValidateHeaderMode,
     nearClientTrustedSigner,
     ethNodeUrl
   }) {
@@ -97,12 +98,24 @@ class InitNearContracts {
       nearClientAccount
     )
     const robustWeb3 = new RobustWeb3(ethNodeUrl)
+
+    // get chain id used only by the bsc verify header.
+    const chainID = await robustWeb3.web3.eth.net.getId()
+
+    // check if the nearClientValidateHeaderMode is either 'ethash' or 'bsc' if not set
+    // 'ethash' as default
+    if (nearClientValidateHeaderMode !== 'ethash' && nearClientValidateHeaderMode !== 'bsc') {
+      nearClientValidateHeaderMode = 'ethash'
+    }
+
     await clientContract.maybeInitialize(
       hashesGcThreshold,
       finalizedGcThreshold,
       numConfirmations,
-      nearClientValidateEthhash === 'true',
+      nearClientValidateHeader === 'true',
+      nearClientValidateHeaderMode,
       nearClientTrustedSigner || null,
+      chainID,
       robustWeb3
     )
     const proverContract = new EthOnNearProverContract(

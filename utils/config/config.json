@@ -1,6 +1,6 @@
 {
   "eth2nearClientContractPath": "~/.rainbow/bridge/libs-rs/res/eth_client.wasm",
-  "eth2nearClientValidateEthash": "false",
+  "eth2nearClientValidateHeader": "false",
   "eth2nearProverContractPath": "~/.rainbow/bridge/libs-rs/res/eth_prover.wasm",
   "nearFunTokenContractPath": "~/.rainbow/bridge/libs-rs/res/bridge_token_factory.wasm",
   "ethLockerAbiPath": "~/.rainbow/bridge/node_modules/rainbow-token-connector/res/BridgeTokenFactory.full.abi",

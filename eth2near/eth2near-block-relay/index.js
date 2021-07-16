@@ -45,8 +45,10 @@ class Eth2NearRelay {
     ethNodeUrl,
     totalSubmitBlock,
     gasPerTransaction,
-    metricsPort
+    metricsPort,
+    nearClientValidateHeaderMode
   }) {
+    this.validateHeaderMode = nearClientValidateHeaderMode
     this.gasPerTransaction = new BN(gasPerTransaction)
     const limitSubmitBlock = new BN(MAX_GAS_PER_BLOCK).div(this.gasPerTransaction).toNumber()
     this.totalSubmitBlock = parseInt(totalSubmitBlock)
@@ -125,8 +127,14 @@ class Eth2NearRelay {
             endBlock = clientBlockNumber + 1
           }
           for (let i = clientBlockNumber + 1; i <= endBlock; i++) {
-            blockPromises.push(this.getParseBlock(i))
+            if (this.validateHeaderMode === 'bsc') {
+              const block = await this.robustWeb3.getBlock(i)
+              blockPromises.push({ header_rlp: block })
+            } else {
+              blockPromises.push(this.getParseBlock(i))
+            }
           }
+
           const blocks = await Promise.all(blockPromises)
           console.log(
             `Got and parsed block ${clientBlockNumber + 1} to block ${endBlock}`
@@ -178,30 +186,39 @@ class Eth2NearRelay {
   }
 
   submitBlock (block, blockNumber) {
-    const h512s = block.elements
-      .filter((_, index) => index % 2 === 0)
-      .map((element, index) => {
-        return (
-          this.web3.utils.padLeft(element, 64) +
-          this.web3.utils.padLeft(block.elements[index * 2 + 1], 64).substr(2)
-        )
-      })
+    let args = {}
 
-    let args = {
-      block_header: this.web3.utils.hexToBytes(block.header_rlp),
-      dag_nodes: h512s
+    if (this.validateHeaderMode === 'bsc') {
+      args = {
+        block_header: web3BlockToRlp(block.header_rlp),
+        dag_nodes: []
+      }
+    } else {
+      const h512s = block.elements
         .filter((_, index) => index % 2 === 0)
         .map((element, index) => {
-          return {
-            dag_nodes: [element, h512s[index * 2 + 1]],
-            proof: block.merkle_proofs
-              .slice(
-                index * block.proof_length,
-                (index + 1) * block.proof_length
-              )
-              .map((leaf) => this.web3.utils.padLeft(leaf, 32))
-          }
+          return (
+            this.web3.utils.padLeft(element, 64) +
+            this.web3.utils.padLeft(block.elements[index * 2 + 1], 64).substr(2)
+          )
         })
+
+      args = {
+        block_header: this.web3.utils.hexToBytes(block.header_rlp),
+        dag_nodes: h512s
+          .filter((_, index) => index % 2 === 0)
+          .map((element, index) => {
+            return {
+              dag_nodes: [element, h512s[index * 2 + 1]],
+              proof: block.merkle_proofs
+                .slice(
+                  index * block.proof_length,
+                  (index + 1) * block.proof_length
+                )
+                .map((leaf) => this.web3.utils.padLeft(leaf, 32))
+            }
+          })
+      }
     }
 
     args = serialize(borshSchema, 'addBlockHeaderInput', args)

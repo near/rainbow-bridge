@@ -14,6 +14,7 @@ const {
 } = require('./commands/start/near2eth-relay.js')
 const { StartWatchdogCommand } = require('./commands/start/watchdog.js')
 const { StartGanacheNodeCommand } = require('./commands/start/ganache.js')
+const { StartBinanceSmartChainNodeCommand } = require('./commands/start/binance-smart-chain.js')
 const { StartLocalNearNodeCommand } = require('./commands/start/near.js')
 const { AddressWatcherCommand } = require('./commands/start/address-watcher.js')
 const { StopManagedProcessCommand } = require('./commands/stop/process.js')
@@ -94,9 +95,15 @@ RainbowConfig.declareOption(
   '100000000000000000000000000'
 )
 RainbowConfig.declareOption(
-  'near-client-validate-ethash',
-  'Whether validate ethash of submitted eth block, should set to true on mainnet and false on PoA testnets',
+  'near-client-validate-header',
+  'Whether validate header of submitted eth block, should set to true on mainnet(s) and false on PoA testnets',
   'true'
+)
+
+RainbowConfig.declareOption(
+  'near-client-validate-header-mode',
+  'Choose between ethash and bsc',
+  'ethash'
 )
 RainbowConfig.declareOption(
   'hashes-gc-threshold',
@@ -336,6 +343,16 @@ RainbowConfig.addOptions(
 )
 
 RainbowConfig.addOptions(
+  startCommand.command('binance-smart-chain'),
+  StartBinanceSmartChainNodeCommand.execute,
+  [
+    'eth-node-url',
+    'eth-master-sk',
+    'near-client-validate-header'
+  ]
+)
+
+RainbowConfig.addOptions(
   startCommand.command('eth2near-relay'),
   StartEth2NearRelayCommand.execute,
   [
@@ -348,7 +365,8 @@ RainbowConfig.addOptions(
     'total-submit-block',
     'gas-per-transaction',
     'daemon',
-    'metrics-port'
+    'metrics-port',
+    'near-client-validate-header-mode'
   ]
 )
 
@@ -456,7 +474,8 @@ RainbowConfig.addOptions(
     'near-client-sk',
     'near-client-contract-path',
     'near-client-init-balance',
-    'near-client-validate-ethash',
+    'near-client-validate-header',
+    'near-client-validate-header-mode',
     'near-client-trusted-signer',
     'hashes-gc-threshold',
     'finalized-gc-threshold',
